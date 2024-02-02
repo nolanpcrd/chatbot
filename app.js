@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js';
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, getDocs, limit } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
 
 // Remplacez ces valeurs par la configuration de votre projet Firebase
@@ -28,36 +28,23 @@ const messagesCollection = collection(database, 'messages'); // Déclarer messag
 const messagesArray = [];
 
 // Fonction pour ajouter un message à la boîte de chat
-export function listenToMessages() {
-    const query1 = query(messagesCollection);
-
-    // Désabonnez-vous des abonnements précédents
-    if (unsubscribe) {
-        unsubscribe();
-    }
-
-    // Abonnez-vous aux nouveaux changements
-    unsubscribe = onSnapshot(query1, (snapshot) => {
-        const messages = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                text: data.text,
-                timestamp: data.timestamp.toMillis(), // Convertir le timestamp Firestore en millisecondes
-            };
-        });
-
-        appendMessages(messages);
+function appendMessage(message) {
+    // Ajouter le message au tableau des messages
+    messagesArray.push({
+        text: message.text,
+        timestamp: message.timestamp,
     });
-}
 
-// Fonction pour ajouter des messages à la boîte de chat
-function appendMessages(messages) {
-    // Ajouter les messages au tableau des messages
-    messagesArray.push(...messages);
-
-    // Trier les messages par timestamp
-    messagesArray.sort((a, b) => a.timestamp - b.timestamp);
+    // Trier les messages en plaçant ceux avec un timestamp nul à la fin
+    messagesArray.sort((a, b) => {
+        if (a.timestamp === null && b.timestamp !== null) {
+            return 1;
+        } else if (a.timestamp !== null && b.timestamp === null) {
+            return -1;
+        } else {
+            return a.timestamp - b.timestamp;
+        }
+    });
 
     // Créer un tableau pour stocker les éléments triés
     const sortedElements = [];
@@ -82,17 +69,49 @@ function appendMessages(messages) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+// Écoutez les changements de la base de données
+export function listenToMessages() {
+    const query1 = query(messagesCollection);
 
-export function sendMessage() {
+    // Désabonnez-vous des abonnements précédents
+    if (unsubscribe) {
+        unsubscribe();
+    }
+
+    // Abonnez-vous aux nouveaux changements
+    unsubscribe = onSnapshot(query1, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                const message = { id: change.doc.id, ...change.doc.data() };
+                appendMessage(message);
+            }
+        });
+    });
+}
+
+export async function sendMessage() {
     const messageInput = document.getElementById('message-input');
     const messageText = messageInput.value;
 
     if (messageText.trim() !== '') {
-        addDoc(messagesCollection, {
+        // Récupérer le timestamp du dernier message
+        const lastMessageQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(1));
+        const lastMessageSnapshot = await getDocs(lastMessageQuery);
+
+        let lastTimestamp = 0;
+
+        if (!lastMessageSnapshot.empty) {
+            const lastMessageData = lastMessageSnapshot.docs[0].data();
+            lastTimestamp = lastMessageData.timestamp.toMillis();
+        }
+
+        // Ajouter le nouveau message avec un timestamp supérieur
+        await addDoc(messagesCollection, {
             text: messageText,
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
         });
 
-        messageInput.value = '';
+        // Actualiser la page (ou vous pouvez mettre en œuvre une logique pour actualiser uniquement la boîte de chat)
+        location.reload();
     }
 }
