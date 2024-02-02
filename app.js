@@ -23,7 +23,7 @@ const chatBox = document.getElementById('chat-box');
 // Écoutez les changements de la base de données
 // Notez que pour Firestore, la manière de récupérer des données est légèrement différente
 const messagesCollection = collection(database, 'messages');
-const query1 = query(messagesCollection, orderBy('timestamp', 'asc')); // Tri par timestamp croissant
+const query1 = query(messagesCollection);
 const unsubscribe = onSnapshot(query1, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
