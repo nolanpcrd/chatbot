@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js';
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
+import { collection, addDoc, onSnapshot, query, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
 
 // Remplacez ces valeurs par la configuration de votre projet Firebase
 const firebaseConfig = {
@@ -48,9 +48,11 @@ export function sendMessage() {
     const messageText = messageInput.value;
 
     if (messageText.trim() !== '') {
+        // Utilisez le timestamp côté client
+        const clientTimestamp = new Date();
         addDoc(messagesCollection, {
             text: messageText,
-            timestamp: serverTimestamp()
+            timestamp: clientTimestamp.getTime() // Utilisez le timestamp en millisecondes
         });
 
         messageInput.value = '';
