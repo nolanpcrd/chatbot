@@ -1,8 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js';
-import { collection, addDoc, serverTimestamp, onSnapshot, query } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
-
-import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js';
-import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
 
 // Remplacez ces valeurs par la configuration de votre projet Firebase
 const firebaseConfig = {
@@ -18,15 +15,17 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 
 // Obtenez la référence de la base de données en temps réel
-const database = getFirestore(firebaseApp); // Utilisation de Firestore au lieu de la base de données en temps réel
+const database = getFirestore(firebaseApp);
 
 const chatBox = document.getElementById('chat-box');
 
 // Écoutez les changements de la base de données
-// Notez que pour Firestore, la manière de récupérer des données est légèrement différente
 const messagesCollection = collection(database, 'messages');
-const query1 = query(messagesCollection);
+const query1 = query(messagesCollection, orderBy('timestamp', 'asc')); // Tri des messages par horodatage
 const unsubscribe = onSnapshot(query1, (snapshot) => {
+    // Nettoyez la boîte de chat avant d'ajouter de nouveaux messages
+    chatBox.innerHTML = '';
+
     snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
             const message = change.doc.data();
