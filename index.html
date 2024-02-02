@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <title>Inscription</title>
     <script src="index.js"></script>
+    <script>
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+        messageInput.focus();
+    </script>
 </head>
 <body>
 <h2>Entrez votre nom d'utilisateur :</h2>
