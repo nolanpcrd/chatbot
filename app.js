@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js';
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
 
 // Remplacez ces valeurs par la configuration de votre projet Firebase
 const firebaseConfig = {
@@ -19,13 +19,10 @@ const database = getFirestore(firebaseApp);
 
 const chatBox = document.getElementById('chat-box');
 
-// Écoutez les changements de la base de données
+// Écoutez les changements de la base de données uniquement pour les ajouts
 const messagesCollection = collection(database, 'messages');
 const query1 = query(messagesCollection, orderBy('timestamp', 'asc')); // Tri des messages par horodatage
-const unsubscribe = onSnapshot(query1, (snapshot) => {
-    // Nettoyez la boîte de chat avant d'ajouter de nouveaux messages
-    chatBox.innerHTML = '';
-
+onSnapshot(query1, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
             const message = change.doc.data();
@@ -33,6 +30,18 @@ const unsubscribe = onSnapshot(query1, (snapshot) => {
         }
     });
 });
+
+// Récupérez tous les messages existants une seule fois lors de l'initialisation
+async function initializeChat() {
+    const snapshot = await getDocs(query1);
+    snapshot.forEach((doc) => {
+        const message = doc.data();
+        appendMessage(message);
+    });
+}
+
+// Appelez la fonction d'initialisation
+initializeChat();
 
 export function sendMessage() {
     const messageInput = document.getElementById('message-input');
