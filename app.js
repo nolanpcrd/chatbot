@@ -28,23 +28,36 @@ const messagesCollection = collection(database, 'messages'); // Déclarer messag
 const messagesArray = [];
 
 // Fonction pour ajouter un message à la boîte de chat
-function appendMessage(message) {
-    // Ajouter le message au tableau des messages
-    messagesArray.push({
-        text: message.text,
-        timestamp: message.timestamp,
-    });
+export function listenToMessages() {
+    const query1 = query(messagesCollection);
 
-    // Trier les messages en plaçant ceux avec un timestamp nul à la fin
-    messagesArray.sort((a, b) => {
-        if (a.timestamp === null && b.timestamp !== null) {
-            return 1;
-        } else if (a.timestamp !== null && b.timestamp === null) {
-            return -1;
-        } else {
-            return a.timestamp - b.timestamp;
-        }
+    // Désabonnez-vous des abonnements précédents
+    if (unsubscribe) {
+        unsubscribe();
+    }
+
+    // Abonnez-vous aux nouveaux changements
+    unsubscribe = onSnapshot(query1, (snapshot) => {
+        const messages = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                text: data.text,
+                timestamp: data.timestamp.toMillis(), // Convertir le timestamp Firestore en millisecondes
+            };
+        });
+
+        appendMessages(messages);
     });
+}
+
+// Fonction pour ajouter des messages à la boîte de chat
+function appendMessages(messages) {
+    // Ajouter les messages au tableau des messages
+    messagesArray.push(...messages);
+
+    // Trier les messages par timestamp
+    messagesArray.sort((a, b) => a.timestamp - b.timestamp);
 
     // Créer un tableau pour stocker les éléments triés
     const sortedElements = [];
@@ -67,26 +80,6 @@ function appendMessage(message) {
 
     // Faites défiler vers le bas pour voir le dernier message
     chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Écoutez les changements de la base de données
-export function listenToMessages() {
-    const query1 = query(messagesCollection);
-
-    // Désabonnez-vous des abonnements précédents
-    if (unsubscribe) {
-        unsubscribe();
-    }
-
-    // Abonnez-vous aux nouveaux changements
-    unsubscribe = onSnapshot(query1, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                const message = { id: change.doc.id, ...change.doc.data() };
-                appendMessage(message);
-            }
-        });
-    });
 }
 
 
