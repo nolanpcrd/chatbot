@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>messagerie</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="app.js"></script>
+    <script type="module">
+        import { sendMessage } from './app.js';
+        document.getElementById('sendButton').addEventListener('click', sendMessage);
+    </script>
+</head>
+<body>
+<div id="chat-box"></div>
+<form id="chat-form">
+    <input type="text" id="message-input" placeholder="Entrez votre message">
+    <button type="button" id="sendButton">Envoyer</button>
+</form>
+</body>
+</html>
